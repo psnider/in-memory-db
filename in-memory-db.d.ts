@@ -1,4 +1,9 @@
 import {ArrayCallback, Conditions, Cursor, DocumentID, DocumentBase, DocumentDatabase, ErrorOnlyCallback, Fields, ObjectCallback, ObjectOrArrayCallback, Sort, UpdateFieldCommand} from 'document-database-if'
+import {UnsupportedUpdateCmds} from 'document-database-tests'
+
+
+export var UNSUPPORTED_UPDATE_CMDS: UnsupportedUpdateCmds
+
 
 export class InMemoryDB<DocumentType extends DocumentBase> extends DocumentDatabase<DocumentType> {
     constructor(db_name: string, type: string | {})

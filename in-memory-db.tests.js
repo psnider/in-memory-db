@@ -33,6 +33,16 @@ function newContactMethod() {
         address: phone_number
     };
 }
+var fields_used_in_tests = {
+    populated_string: 'account_email',
+    unpopulated_string: 'time_zone',
+    obj_array: {
+        name: 'contact_methods',
+        key_field: 'address',
+        populated_field: { name: 'method', type: 'string' },
+        createElement: newContactMethod
+    }
+};
 // NOTE: these tests are identical to the ones in people-service.tests.ts
 describe('InMemoryDB', function () {
     function getDB() { return db; }
@@ -53,28 +63,8 @@ describe('InMemoryDB', function () {
     });
     describe('update()', function () {
         var config = {
-            test: {
-                populated_string: 'account_email',
-                unpopulated_string: 'time_zone',
-                obj_array: {
-                    name: 'contact_methods',
-                    key_field: 'address',
-                    populated_field: { name: 'method', type: 'string' },
-                    createElement: newContactMethod
-                }
-            },
-            unsupported: {
-                object: {
-                    set: false,
-                    unset: true
-                },
-                array: {
-                    set: true,
-                    unset: true,
-                    insert: true,
-                    remove: true
-                }
-            }
+            test: fields_used_in_tests,
+            unsupported: in_memory_db_1.UNSUPPORTED_UPDATE_CMDS
         };
         document_database_tests_1.test_update(getDB, newPerson, config);
     });

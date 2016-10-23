@@ -2,11 +2,11 @@ import CHAI                 = require('chai')
 const  expect               = CHAI.expect
 
 import {ArrayCallback, Conditions, Cursor, DocumentID, DocumentDatabase, ErrorOnlyCallback, Fields, ObjectCallback, Sort, UpdateFieldCommand} from 'document-database-if'
-import {UpdateConfiguration, test_create, test_read, test_replace, test_del, test_update, test_find} from 'document-database-tests'
+import {UpdateConfiguration, FieldsUsedInTests, test_create, test_read, test_replace, test_del, test_update, test_find} from 'document-database-tests'
 
 // select either: people-db-mongo or people-db-in-memory
 
-import {InMemoryDB} from 'in-memory-db'
+import {InMemoryDB, UNSUPPORTED_UPDATE_CMDS} from 'in-memory-db'
 
 
 var db: DocumentDatabase<Person> = new InMemoryDB('people', 'Person')
@@ -81,6 +81,17 @@ function newContactMethod() : ContactMethod {
 }
 
 
+var fields_used_in_tests: FieldsUsedInTests = {
+    populated_string: 'account_email',
+    unpopulated_string: 'time_zone',
+    obj_array: {
+        name: 'contact_methods',
+        key_field: 'address',
+        populated_field: {name:'method', type: 'string'},
+        createElement: newContactMethod
+    }
+}
+
 
 
 // NOTE: these tests are identical to the ones in people-service.tests.ts
@@ -115,30 +126,9 @@ describe('InMemoryDB', function() {
 
     describe('update()', function() {
         var config: UpdateConfiguration = {
-            test: {
-                populated_string: 'account_email',
-                unpopulated_string: 'time_zone',
-                obj_array: {
-                    name: 'contact_methods',
-                    key_field: 'address',
-                    populated_field: {name:'method', type: 'string'},
-                    createElement: newContactMethod
-                }
-            },
-            unsupported: {
-                object: {
-                    set: false, 
-                    unset: true
-                },
-                array: {
-                    set: true,
-                    unset: true,
-                    insert: true,
-                    remove: true
-                }
-            }
+            test: fields_used_in_tests,
+            unsupported: UNSUPPORTED_UPDATE_CMDS
         }
-
         test_update<Person>(getDB, newPerson, config)
     })
 

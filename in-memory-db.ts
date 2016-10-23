@@ -5,6 +5,7 @@ import HTTP_STATUS = require('http-status-codes')
 
 import configure = require('configure-local')
 import {ArrayCallback, Conditions, Cursor, DocumentID, DocumentBase, DocumentDatabase, ErrorOnlyCallback, Fields, ObjectCallback, ObjectOrArrayCallback, Sort, UpdateFieldCommand} from 'document-database-if'
+import {UnsupportedUpdateCmds} from 'document-database-tests'
 
 var log = pino({name: 'people-db', enabled: !process.env.DISABLE_LOGGING})
 
@@ -25,6 +26,20 @@ function newError(msg, status) {
     let error = new Error(msg)
     error['http_status'] = status
     return error
+}
+
+
+export var UNSUPPORTED_UPDATE_CMDS: UnsupportedUpdateCmds = {
+    object: {
+        set: false, 
+        unset: true
+    },
+    array: {
+        set: true,
+        unset: true,
+        insert: true,
+        remove: true
+    }
 }
 
 
@@ -348,3 +363,5 @@ export class InMemoryDB<DataType extends DocumentBase> implements DocumentDataba
     }
 
 }
+
+

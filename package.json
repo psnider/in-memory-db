@@ -11,7 +11,7 @@
     "install-in-node_modules": "bin/install-in-node_modules.sh",
     "build": "tsc --project .",
     "clean": "rm in-memory-db.js",
-    "test-in-memory-db-only": "mocha -R spec in-memory-db.tests.js",
+    "test-in-memory-db-only": "DISABLE_LOGGING=true mocha -R spec in-memory-db.tests.js",
     "test": "npm run clean && npm run build && npm run install-in-node_modules && npm run test-in-memory-db-only"
   },
   "author": {
@@ -35,7 +35,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git@github.com:psnider/people-service.git"
+    "url": "git@github.com:psnider/in-memory-db.git"
   },
   "typings": "in-memory-db.d.ts"
 }

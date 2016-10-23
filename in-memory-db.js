@@ -19,6 +19,18 @@ function newError(msg, status) {
     error['http_status'] = status;
     return error;
 }
+exports.UNSUPPORTED_UPDATE_CMDS = {
+    object: {
+        set: false,
+        unset: true
+    },
+    array: {
+        set: true,
+        unset: true,
+        insert: true,
+        remove: true
+    }
+};
 var InMemoryDB = (function () {
     function InMemoryDB(_id, typename) {
         this.next_id = 1;
