@@ -1,0 +1,8 @@
+{
+  "resolution": "main",
+  "tree": {
+    "src": "https://raw.githubusercontent.com/DefinitelyTyped/DefinitelyTyped/bbbc2633179c978b41ab44c6a37a260cf7f4f21b/pino/pino.d.ts",
+    "raw": "registry:dt/pino#1.0.1+20160906151259",
+    "typings": "https://raw.githubusercontent.com/DefinitelyTyped/DefinitelyTyped/bbbc2633179c978b41ab44c6a37a260cf7f4f21b/pino/pino.d.ts"
+  }
+}
