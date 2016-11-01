@@ -9,7 +9,7 @@
     "postinstall": "npm run typings-all",
     "typings-all": "typings install",
     "install-in-node_modules": "bin/install-in-node_modules.sh",
-    "build": "tsc --project .",
+    "build": "npm run install-in-node_modules && tsc --project .",
     "clean": "rm in-memory-db.js",
     "test-in-memory-db-only": "DISABLE_LOGGING=true mocha -R spec in-memory-db.tests.js",
     "test": "npm run clean && npm run build && npm run install-in-node_modules && npm run test-in-memory-db-only"
@@ -22,16 +22,16 @@
   "dependencies": {
     "configure-local": "github:psnider/configure-local",
     "document-database-if": "github:psnider/document-database-if",
-    "es6-shim": "^0.35.1",
-    "http-status-codes": "^1.0.6",
-    "pino": "^2.12.4"
+    "es6-shim": "0.35.1",
+    "http-status-codes": "1.0.6",
+    "pino": "2.14.0"
   },
   "devDependencies": {
-    "chai": "^3.5.0",
+    "chai": "3.5.0",
     "document-database-tests": "github:psnider/document-database-tests",
-    "mocha": "^3.1.2",
-    "typescript": "^2.0.3",
-    "typings": "^1.4.0"
+    "mocha": "3.1.2",
+    "typescript": "2.0.6",
+    "typings": "1.5.0"
   },
   "repository": {
     "type": "git",
