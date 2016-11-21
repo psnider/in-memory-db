@@ -9,7 +9,7 @@ import {UpdateConfiguration, FieldsUsedInTests, test_create, test_read, test_rep
 import {InMemoryDB, UNSUPPORTED_UPDATE_CMDS} from 'in-memory-db'
 
 
-var db: DocumentDatabase<Person> = new InMemoryDB('people', 'Person')
+var db: DocumentDatabase = new InMemoryDB('people', 'Person')
 
 
 // example data type, from people-service project

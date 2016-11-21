@@ -7,6 +7,9 @@ import configure = require('configure-local')
 import {ArrayCallback, Conditions, Cursor, DocumentID, DocumentBase, DocumentDatabase, ErrorOnlyCallback, Fields, ObjectCallback, ObjectOrArrayCallback, Sort, UpdateFieldCommand} from 'document-database-if'
 import {UnsupportedUpdateCmds} from 'document-database-tests'
 
+type DataType = DocumentBase
+
+
 var log = pino({name: 'people-db', enabled: !process.env.DISABLE_LOGGING})
 
 
@@ -43,7 +46,7 @@ export var UNSUPPORTED_UPDATE_CMDS: UnsupportedUpdateCmds = {
 }
 
 
-export class InMemoryDB<DataType extends DocumentBase> implements DocumentDatabase<DataType> {
+export class InMemoryDB implements DocumentDatabase {
 
     next_id: number
     connected: boolean
@@ -134,9 +137,9 @@ export class InMemoryDB<DataType extends DocumentBase> implements DocumentDataba
     }
 
 
-    // create(obj: T): Promise<T>
-    // create(obj: T, done: CreateCallback<T>): void
-    create(obj: DataType, done?: ObjectCallback<DataType>): any {
+    create(obj: DataType): Promise<DataType>
+    create(obj: DataType, done: ObjectCallback): void
+    create(obj: DataType, done?: ObjectCallback): Promise<DataType> | void {
         if (done) {
             if (this.connected) {
                 if (obj['_id'] == null) {
@@ -170,9 +173,9 @@ export class InMemoryDB<DataType extends DocumentBase> implements DocumentDataba
     }
 
 
-    // read(_id : string) : Promise<T>
-    // read(_id : string, done: ReadCallback<T>) : void
-    read(_id: DocumentID, done?: ObjectCallback<DataType>): any {
+    read(_id: DocumentID): Promise<DataType>
+    read(_id: DocumentID, done: ObjectCallback): void
+    read(_id: DocumentID, done?: ObjectCallback): Promise<DataType> | void {
         if (done) {
             if (this.connected) {
                 if (_id) {
@@ -204,9 +207,9 @@ export class InMemoryDB<DataType extends DocumentBase> implements DocumentDataba
     }
 
 
-    // replace(obj: T) : Promise<T>
-    // replace(obj: T, done: ReplaceCallback<T>) : void
-    replace(obj: DataType, done?: ObjectCallback<DataType>): any {
+    replace(obj: DataType): Promise<DataType>
+    replace(obj: DataType, done: ObjectCallback): void
+    replace(obj: DataType, done?: ObjectCallback): Promise<DataType> | void {
         if (done) {
             if (this.connected) {
                 if (this.isInIndex(obj._id)) {
@@ -239,9 +242,9 @@ export class InMemoryDB<DataType extends DocumentBase> implements DocumentDataba
     }
 
 
-    // update(conditions : Conditions, updates: UpdateFieldCommand[], getOriginalDocument?: GetOriginalDocumentCallback<T>) : Promise<T>
-    // update(conditions : Conditions, updates: UpdateFieldCommand[], getOriginalDocument: GetOriginalDocumentCallback<T>, done: UpdateSingleCallback<T>) : void
-    update(conditions : Conditions, updates: UpdateFieldCommand[], done?: ObjectCallback<DataType>) : any {
+    update(conditions: Conditions, updates: UpdateFieldCommand[]): Promise<DataType>
+    update(conditions: Conditions, updates: UpdateFieldCommand[], done: ObjectCallback): void
+    update(conditions: Conditions, updates: UpdateFieldCommand[], done?: ObjectCallback): Promise<DataType> | void {
         if (done) {
             if (this.connected) {
                 let _id = conditions['_id']
@@ -265,7 +268,7 @@ export class InMemoryDB<DataType extends DocumentBase> implements DocumentDataba
     }
 
 
-    promisify_update(conditions : Conditions, updates: UpdateFieldCommand[]): Promise<DataType> {
+    promisify_update(conditions: Conditions, updates: UpdateFieldCommand[]): Promise<DataType> {
         return new Promise((resolve, reject) => {
             this.update(conditions, updates, (error, result) => {
                 if (!error) {
@@ -278,9 +281,9 @@ export class InMemoryDB<DataType extends DocumentBase> implements DocumentDataba
     }
 
 
-    // del(conditions : Conditions, getOriginalDocument?: (doc : T) => void) : Promise<void>
-    // del(conditions : Conditions, getOriginalDocument: (doc : T) => void, done: DeleteSingleCallback) : void
-    del(_id: DocumentID, done?: ErrorOnlyCallback): any {
+    del(_id: DocumentID): Promise<void>
+    del(_id: DocumentID, done: ErrorOnlyCallback): void
+    del(_id: DocumentID, done?: ErrorOnlyCallback): Promise<void> | void {
         if (done) {
             if (this.connected) {
                 if (_id != null) {
@@ -313,9 +316,9 @@ export class InMemoryDB<DataType extends DocumentBase> implements DocumentDataba
 
 
 
-    // find(conditions : Conditions, fields?: Fields, sort?: Sort, cursor?: Cursor) : Promise<T[]> 
-    // find(conditions : Conditions, fields: Fields, sort: Sort, cursor: Cursor, done: FindCallback<T>) : void
-    find(conditions: Conditions, fields: Fields, sort: Sort, cursor: Cursor, done?: ArrayCallback<DataType>) : any {
+    find(conditions: Conditions, fields: Fields, sort: Sort, cursor: Cursor): Promise<DataType[]> 
+    find(conditions: Conditions, fields: Fields, sort: Sort, cursor: Cursor, done: ArrayCallback): void
+    find(conditions: Conditions, fields: Fields, sort: Sort, cursor: Cursor, done?: ArrayCallback): Promise<DataType[]> | void {
         if (done) {
             if (this.connected) {
                 let matching_ids = []

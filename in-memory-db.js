@@ -100,8 +100,6 @@ var InMemoryDB = (function () {
             return Promise.resolve();
         }
     };
-    // create(obj: T): Promise<T>
-    // create(obj: T, done: CreateCallback<T>): void
     InMemoryDB.prototype.create = function (obj, done) {
         if (done) {
             if (this.connected) {
@@ -138,8 +136,6 @@ var InMemoryDB = (function () {
             });
         });
     };
-    // read(_id : string) : Promise<T>
-    // read(_id : string, done: ReadCallback<T>) : void
     InMemoryDB.prototype.read = function (_id, done) {
         if (done) {
             if (this.connected) {
@@ -173,8 +169,6 @@ var InMemoryDB = (function () {
             });
         });
     };
-    // replace(obj: T) : Promise<T>
-    // replace(obj: T, done: ReplaceCallback<T>) : void
     InMemoryDB.prototype.replace = function (obj, done) {
         if (done) {
             if (this.connected) {
@@ -209,8 +203,6 @@ var InMemoryDB = (function () {
             });
         });
     };
-    // update(conditions : Conditions, updates: UpdateFieldCommand[], getOriginalDocument?: GetOriginalDocumentCallback<T>) : Promise<T>
-    // update(conditions : Conditions, updates: UpdateFieldCommand[], getOriginalDocument: GetOriginalDocumentCallback<T>, done: UpdateSingleCallback<T>) : void
     InMemoryDB.prototype.update = function (conditions, updates, done) {
         if (done) {
             if (this.connected) {
@@ -251,8 +243,6 @@ var InMemoryDB = (function () {
             });
         });
     };
-    // del(conditions : Conditions, getOriginalDocument?: (doc : T) => void) : Promise<void>
-    // del(conditions : Conditions, getOriginalDocument: (doc : T) => void, done: DeleteSingleCallback) : void
     InMemoryDB.prototype.del = function (_id, done) {
         if (done) {
             if (this.connected) {
@@ -286,8 +276,6 @@ var InMemoryDB = (function () {
             });
         });
     };
-    // find(conditions : Conditions, fields?: Fields, sort?: Sort, cursor?: Cursor) : Promise<T[]> 
-    // find(conditions : Conditions, fields: Fields, sort: Sort, cursor: Cursor, done: FindCallback<T>) : void
     InMemoryDB.prototype.find = function (conditions, fields, sort, cursor, done) {
         var _this = this;
         if (done) {
