@@ -1,6 +1,6 @@
 # in-memory-db
 
-An in-memory database that implements [document-database-if](https://github.com/psnider/document-database-if).
+An in-memory database that implements [document-database](https://github.com/psnider/document-database).
 
 This database is for test only, as it doesn't persist.
 

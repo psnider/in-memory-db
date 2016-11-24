@@ -1,6 +1,5 @@
-import {ArrayCallback, Conditions, Cursor, DocumentID, DocumentBase, DocumentDatabase, ErrorOnlyCallback, Fields, ObjectCallback, ObjectOrArrayCallback, Sort, UpdateFieldCommand} from 'document-database-if'
-import {UnsupportedUpdateCmds} from 'document-database-tests'
-export var UNSUPPORTED_UPDATE_CMDS: UnsupportedUpdateCmds
+import {ArrayCallback, Conditions, Cursor, DocumentID, DocumentBase, DocumentDatabase, ErrorOnlyCallback, Fields, ObjectCallback, ObjectOrArrayCallback, Sort, UpdateFieldCommand} from '@sabbatical/document-database'
+export {UnsupportedUpdateCmds} from '@sabbatical/document-database/tests'
 
 type DocumentType = DocumentBase
 

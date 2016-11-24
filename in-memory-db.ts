@@ -3,9 +3,9 @@
 import pino = require('pino')
 import HTTP_STATUS = require('http-status-codes')
 
-import configure = require('configure-local')
-import {ArrayCallback, Conditions, Cursor, DocumentID, DocumentBase, DocumentDatabase, ErrorOnlyCallback, Fields, ObjectCallback, ObjectOrArrayCallback, Sort, UpdateFieldCommand} from 'document-database-if'
-import {UnsupportedUpdateCmds} from 'document-database-tests'
+import configure = require('@sabbatical/configure-local')
+import {ArrayCallback, Conditions, Cursor, DocumentID, DocumentBase, DocumentDatabase, ErrorOnlyCallback, Fields, ObjectCallback, ObjectOrArrayCallback, Sort, UpdateFieldCommand} from '@sabbatical/document-database'
+import {UnsupportedUpdateCmds} from '@sabbatical/document-database/tests'
 
 type DataType = DocumentBase
 

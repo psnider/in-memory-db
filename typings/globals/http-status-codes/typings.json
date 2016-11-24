@@ -1,8 +1,0 @@
-{
-  "resolution": "main",
-  "tree": {
-    "src": "https://raw.githubusercontent.com/DefinitelyTyped/DefinitelyTyped/df409d2ef6da6ce2bb43457a0198437df2ba978c/http-status-codes/http-status-codes.d.ts",
-    "raw": "registry:dt/http-status-codes#1.0.5+20160122033621",
-    "typings": "https://raw.githubusercontent.com/DefinitelyTyped/DefinitelyTyped/df409d2ef6da6ce2bb43457a0198437df2ba978c/http-status-codes/http-status-codes.d.ts"
-  }
-}

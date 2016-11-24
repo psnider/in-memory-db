@@ -1,12 +1,12 @@
 import CHAI                 = require('chai')
 const  expect               = CHAI.expect
 
-import {ArrayCallback, Conditions, Cursor, DocumentID, DocumentDatabase, ErrorOnlyCallback, Fields, ObjectCallback, Sort, UpdateFieldCommand} from 'document-database-if'
-import {UpdateConfiguration, FieldsUsedInTests, test_create, test_read, test_replace, test_del, test_update, test_find} from 'document-database-tests'
+import {ArrayCallback, Conditions, Cursor, DocumentID, DocumentDatabase, ErrorOnlyCallback, Fields, ObjectCallback, Sort, UpdateFieldCommand} from '@sabbatical/document-database'
+import {UpdateConfiguration, FieldsUsedInTests, test_create, test_read, test_replace, test_del, test_update, test_find} from '@sabbatical/document-database/tests'
 
 // select either: people-db-mongo or people-db-in-memory
 
-import {InMemoryDB, UNSUPPORTED_UPDATE_CMDS} from 'in-memory-db'
+import {InMemoryDB, UNSUPPORTED_UPDATE_CMDS} from './in-memory-db'
 
 
 var db: DocumentDatabase = new InMemoryDB('people', 'Person')
