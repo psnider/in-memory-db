@@ -8,7 +8,7 @@
         "removeComments": false,
         "noLib": false,
         "outDir": ".",
-        "types": ["http-status-codes", "node", "pino", "@sabbatical/configure-local"]
+        "types": ["http-status-codes", "node", "pino"]
     },
     "formatCodeOptions": {
         "indentSize": 4,
