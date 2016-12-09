@@ -1,6 +1,6 @@
 {
   "name": "@sabbatical/in-memory-db",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "An in-memory database that implements the document-database interface. This database is for test only, as it doesn't persist.",
   "main": "in-memory-db.js",
   "keywords": [],
@@ -8,8 +8,8 @@
   "scripts": {
     "build": "bin/build-and-install-in-node_modules.sh",
     "clean": "rm -fr *.js node_modules/@sabbatical/in-memory-db/*",
-    "test-in-memory-db-only": "DISABLE_LOGGING=true mocha -R spec in-memory-db.tests.js",
-    "test": "npm run clean && npm run build && npm run test-in-memory-db-only"
+    "test-only": "DISABLE_LOGGING=true mocha -R spec in-memory-db.tests.js",
+    "test": "npm run clean && npm run build && npm run test-only"
   },
   "author": {
     "name": "Peter Snider",
@@ -18,7 +18,7 @@
   "license": "MIT",
   "dependencies": {
     "@sabbatical/configure-local": "1.0.2",
-    "@sabbatical/document-database": "0.3.0",
+    "@sabbatical/document-database": "0.3.1",
     "@types/http-status-codes": "1.0.29",
     "@types/pino": "1.0.5",
     "http-status-codes": "1.0.6",

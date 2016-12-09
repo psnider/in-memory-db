@@ -175,28 +175,48 @@ export class InMemoryDB implements DocumentDatabase {
 
     read(_id: DocumentID): Promise<DataType>
     read(_id: DocumentID, done: ObjectCallback): void
-    read(_id: DocumentID, done?: ObjectCallback): Promise<DataType> | void {
+    read(_ids: DocumentID[]): Promise<DataType[]> 
+    read(_ids: DocumentID[], done: ArrayCallback): void
+    read(_id_or_ids: DocumentID | DocumentID[], done?: ObjectOrArrayCallback): Promise<DataType | DataType[]> | void {
         if (done) {
+            if (Array.isArray(_id_or_ids)) {
+                var _ids = <DocumentID[]>_id_or_ids
+            } else if ((typeof _id_or_ids === 'string') && (_id_or_ids.length > 0)){
+                var _id = <DocumentID>_id_or_ids
+            }
             if (this.connected) {
                 if (_id) {
                     var obj = this.cloneFromIndex(_id)
                     done(undefined, obj)
+                } else if (_ids) {
+                    let results = []
+                    _ids.forEach((_id) => {
+                        var obj = this.cloneFromIndex(_id)
+                        if (obj) {
+                            results.push(obj)
+                        }
+                    })
+                    done(undefined, results)
                 } else {
-                    done(new Error ('_id is invalid'))
+                    done(new Error ('_id_or_ids is invalid'))
                 }
             } else {
                 var error = newError('not connected to database', HTTP_STATUS.INTERNAL_SERVER_ERROR)
                 done(error)
             }
         } else {
-            return this.promisify_read(_id)
+            // TODO: resolve this typing problem
+            return this.promisify_read(<any>_id_or_ids)
         }
     }
 
 
-    promisify_read(_id: DocumentID): Promise<DataType> {
+    promisify_read(_id: DocumentID): Promise<DataType>
+    promisify_read(_ids: DocumentID[]) : Promise<DataType[]> 
+    promisify_read(_id_or_ids: DocumentID | DocumentID[]): Promise<DataType | DataType[]> {
         return new Promise((resolve, reject) => {
-            this.read(_id, (error, result) => {
+            // TODO: resolve this typing problem
+            this.read(<any>_id_or_ids, (error, result) => {
                 if (!error) {
                     resolve(result)
                 } else {

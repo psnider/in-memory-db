@@ -135,15 +135,31 @@ class InMemoryDB {
             });
         });
     }
-    read(_id, done) {
+    read(_id_or_ids, done) {
         if (done) {
+            if (Array.isArray(_id_or_ids)) {
+                var _ids = _id_or_ids;
+            }
+            else if ((typeof _id_or_ids === 'string') && (_id_or_ids.length > 0)) {
+                var _id = _id_or_ids;
+            }
             if (this.connected) {
                 if (_id) {
                     var obj = this.cloneFromIndex(_id);
                     done(undefined, obj);
                 }
+                else if (_ids) {
+                    let results = [];
+                    _ids.forEach((_id) => {
+                        var obj = this.cloneFromIndex(_id);
+                        if (obj) {
+                            results.push(obj);
+                        }
+                    });
+                    done(undefined, results);
+                }
                 else {
-                    done(new Error('_id is invalid'));
+                    done(new Error('_id_or_ids is invalid'));
                 }
             }
             else {
@@ -152,12 +168,14 @@ class InMemoryDB {
             }
         }
         else {
-            return this.promisify_read(_id);
+            // TODO: resolve this typing problem
+            return this.promisify_read(_id_or_ids);
         }
     }
-    promisify_read(_id) {
+    promisify_read(_id_or_ids) {
         return new Promise((resolve, reject) => {
-            this.read(_id, (error, result) => {
+            // TODO: resolve this typing problem
+            this.read(_id_or_ids, (error, result) => {
                 if (!error) {
                     resolve(result);
                 }

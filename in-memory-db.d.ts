@@ -11,8 +11,10 @@ export class InMemoryDB extends DocumentDatabase {
     disconnect() : Promise<void>
     create(obj: DocumentType): Promise<DocumentType>
     create(obj: DocumentType, done: ObjectCallback): void
-    read(_id_or_ids: DocumentID | DocumentID[]) : Promise<DocumentType | DocumentType[]> 
-    read(_id_or_ids: DocumentID | DocumentID[], done: ObjectOrArrayCallback) : void
+    read(_id: DocumentID) : Promise<DocumentType> 
+    read(_id: DocumentID, done: ObjectCallback) : void
+    read(_ids: DocumentID[]) : Promise<DocumentType[]> 
+    read(_ids: DocumentID[], done: ArrayCallback) : void
     replace(obj: DocumentType) : Promise<DocumentType>
     replace(obj: DocumentType, done: ObjectCallback) : void
     update(conditions : Conditions, updates: UpdateFieldCommand[]) : Promise<DocumentType>
