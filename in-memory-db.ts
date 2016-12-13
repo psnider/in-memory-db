@@ -115,8 +115,9 @@ export class InMemoryDB implements DocumentDatabase {
     }
 
 
-    // TODO: REPAIR: connect(done?: ErrorOnlyCallback): Promise<void> | void {
-    connect(done?: ErrorOnlyCallback): any {
+    connect(): Promise<void>
+    connect(done: ErrorOnlyCallback): void
+    connect(done?: ErrorOnlyCallback): Promise<void> | void {
         this.connected = true
         if (done) {
             done()
@@ -126,8 +127,9 @@ export class InMemoryDB implements DocumentDatabase {
     }
 
 
-    // TODO: REPAIR: disconnect(done?: ErrorOnlyCallback): Promise<void> | void {
-    disconnect(done?: ErrorOnlyCallback): any {
+    disconnect(): Promise<void>
+    disconnect(done: ErrorOnlyCallback): void
+    disconnect(done?: ErrorOnlyCallback): Promise<void> | void {
         this.connected = false
         if (done) {
             done()
@@ -177,11 +179,11 @@ export class InMemoryDB implements DocumentDatabase {
     read(_id: DocumentID, done: ObjectCallback): void
     read(_ids: DocumentID[]): Promise<DataType[]> 
     read(_ids: DocumentID[], done: ArrayCallback): void
-    read(_id_or_ids: DocumentID | DocumentID[], done?: ObjectOrArrayCallback): Promise<DataType | DataType[]> | void {
+    read(_id_or_ids: DocumentID | DocumentID[], done?: ObjectOrArrayCallback): Promise<DataType> | Promise<DataType[]> | void {
         if (done) {
             if (Array.isArray(_id_or_ids)) {
                 var _ids = <DocumentID[]>_id_or_ids
-            } else if ((typeof _id_or_ids === 'string') && (_id_or_ids.length > 0)){
+            } else if ((typeof _id_or_ids === 'string') && (_id_or_ids.length > 0)) {
                 var _id = <DocumentID>_id_or_ids
             }
             if (this.connected) {
@@ -206,6 +208,7 @@ export class InMemoryDB implements DocumentDatabase {
             }
         } else {
             // TODO: resolve this typing problem
+            //  [resolve type declarations for overloaded methods](https://github.com/psnider/in-memory-db/issues/1)
             return this.promisify_read(<any>_id_or_ids)
         }
     }
@@ -213,9 +216,10 @@ export class InMemoryDB implements DocumentDatabase {
 
     promisify_read(_id: DocumentID): Promise<DataType>
     promisify_read(_ids: DocumentID[]) : Promise<DataType[]> 
-    promisify_read(_id_or_ids: DocumentID | DocumentID[]): Promise<DataType | DataType[]> {
+    promisify_read(_id_or_ids: DocumentID | DocumentID[]): Promise<DataType> | Promise<DataType[]> {
         return new Promise((resolve, reject) => {
             // TODO: resolve this typing problem
+            //  [resolve type declarations for overloaded methods](https://github.com/psnider/in-memory-db/issues/1)
             this.read(<any>_id_or_ids, (error, result) => {
                 if (!error) {
                     resolve(result)
