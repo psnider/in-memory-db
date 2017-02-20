@@ -19,20 +19,26 @@ function newError(msg, status) {
     error['http_status'] = status;
     return error;
 }
-exports.UNSUPPORTED_UPDATE_CMDS = {
-    object: {
-        set: false,
-        unset: true
+exports.SUPPORTED_FEATURES = {
+    replace: true,
+    update: {
+        object: {
+            set: true,
+            unset: false
+        },
+        array: {
+            set: false,
+            unset: false,
+            insert: false,
+            remove: false
+        }
     },
-    array: {
-        set: true,
-        unset: true,
-        insert: true,
-        remove: true
+    find: {
+        all: true
     }
 };
 class InMemoryDB {
-    constructor(_id, typename) {
+    constructor() {
         this.next_id = 1;
         this.connected = false;
         this.index = {};
@@ -80,7 +86,6 @@ class InMemoryDB {
             delete this.index[_id];
         }
     }
-    // TODO: REPAIR: connect(done?: ErrorOnlyCallback): Promise<void> | void {
     connect(done) {
         this.connected = true;
         if (done) {
@@ -90,7 +95,6 @@ class InMemoryDB {
             return Promise.resolve();
         }
     }
-    // TODO: REPAIR: disconnect(done?: ErrorOnlyCallback): Promise<void> | void {
     disconnect(done) {
         this.connected = false;
         if (done) {
@@ -106,6 +110,7 @@ class InMemoryDB {
                 if (obj['_id'] == null) {
                     var cloned_obj = cloneObject(obj);
                     cloned_obj._id = this.createObjectId();
+                    cloned_obj._obj_ver = 1;
                     this.addToIndex(cloned_obj);
                     done(undefined, cloned_obj);
                 }
@@ -169,12 +174,14 @@ class InMemoryDB {
         }
         else {
             // TODO: resolve this typing problem
+            //  [resolve type declarations for overloaded methods](https://github.com/psnider/in-memory-db/issues/1)
             return this.promisify_read(_id_or_ids);
         }
     }
     promisify_read(_id_or_ids) {
         return new Promise((resolve, reject) => {
             // TODO: resolve this typing problem
+            //  [resolve type declarations for overloaded methods](https://github.com/psnider/in-memory-db/issues/1)
             this.read(_id_or_ids, (error, result) => {
                 if (!error) {
                     resolve(result);
@@ -189,9 +196,17 @@ class InMemoryDB {
         if (done) {
             if (this.connected) {
                 if (this.isInIndex(obj._id)) {
-                    // the returned object is different from both the object saved, and the one provided
-                    this.addToIndex(obj);
-                    done(undefined, this.cloneFromIndex(obj._id));
+                    let original_obj = this.getFromIndex(obj._id);
+                    if (obj._obj_ver === original_obj._obj_ver) {
+                        // the returned object is different from both the object saved, and the one provided
+                        this.addToIndex(obj);
+                        let cloned_obj = this.cloneFromIndex(obj._id);
+                        cloned_obj._obj_ver++;
+                        done(undefined, cloned_obj);
+                    }
+                    else {
+                        done(newError(`replace refused due to intermediate update`, HTTP_STATUS.CONFLICT));
+                    }
                 }
                 else {
                     done(newError(`_id is invalid`, HTTP_STATUS.BAD_REQUEST));
@@ -218,19 +233,32 @@ class InMemoryDB {
             });
         });
     }
-    update(conditions, updates, done) {
+    performUpdates(stored_obj, updates) {
+        if (updates.length !== 1)
+            throw new Error('update only supports one UpdateFieldCommand at a time');
+        let update = updates[0];
+        for (let i = 0; i < updates.length; ++i) {
+            let update = updates[i];
+            if (update.cmd !== 'set')
+                throw new Error('update only supports UpdateFieldCommand.cmd==set');
+            if (update.field.includes('.'))
+                throw new Error('update only supports top-level fields');
+            stored_obj[update.field] = update.value;
+        }
+    }
+    update(_id, _obj_ver, updates, done) {
         if (done) {
             if (this.connected) {
-                let _id = conditions['_id'];
-                var obj = this.getFromIndex(_id);
-                if (obj) {
-                    if (updates.length !== 1)
-                        throw new Error('update only supports one UpdateFieldCommand at a time');
-                    let update = updates[0];
-                    if (update.cmd !== 'set')
-                        throw new Error('update only supports UpdateFieldCommand.cmd==set');
-                    obj[update.field] = update.value;
-                    done(undefined, this.cloneFromIndex(_id));
+                var stored_obj = this.getFromIndex(_id);
+                if (stored_obj) {
+                    if (_obj_ver === stored_obj._obj_ver) {
+                        this.performUpdates(stored_obj, updates);
+                        stored_obj._obj_ver++;
+                        done(undefined, this.cloneFromIndex(_id));
+                    }
+                    else {
+                        done(newError(`update refused due to intermediate update`, HTTP_STATUS.CONFLICT));
+                    }
                 }
                 else {
                     done(newError(`_id is invalid`, HTTP_STATUS.BAD_REQUEST));
@@ -242,12 +270,12 @@ class InMemoryDB {
             }
         }
         else {
-            return this.promisify_update(conditions, updates);
+            return this.promisify_update(_id, _obj_ver, updates);
         }
     }
-    promisify_update(conditions, updates) {
+    promisify_update(_id, _obj_ver, updates) {
         return new Promise((resolve, reject) => {
-            this.update(conditions, updates, (error, result) => {
+            this.update(_id, _obj_ver, updates, (error, result) => {
                 if (!error) {
                     resolve(result);
                 }

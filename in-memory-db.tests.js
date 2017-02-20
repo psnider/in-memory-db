@@ -4,7 +4,7 @@ const expect = CHAI.expect;
 const tests_1 = require('@sabbatical/document-database/tests');
 // select either: people-db-mongo or people-db-in-memory
 const in_memory_db_1 = require('./in-memory-db');
-var db = new in_memory_db_1.InMemoryDB('people', 'Person');
+var db = new in_memory_db_1.InMemoryDB();
 let next_email_id = 1;
 let next_mobile_number = 1234;
 // This is identical to newPerson() in people-db.tests.ts
@@ -36,6 +36,7 @@ function newContactMethod() {
 var fields_used_in_tests = {
     populated_string: 'account_email',
     unpopulated_string: 'time_zone',
+    unique_key_fieldname: 'account_email',
     obj_array: {
         name: 'contact_methods',
         key_field: 'address',
@@ -53,25 +54,21 @@ describe('InMemoryDB', function () {
         db.disconnect(done);
     });
     describe('create()', function () {
-        tests_1.test_create(getDB, newPerson, ['account_email', 'locale']);
+        tests_1.test_create(getDB, newPerson, fields_used_in_tests);
     });
     describe('read()', function () {
-        tests_1.test_read(getDB, newPerson, ['account_email', 'locale']);
+        tests_1.test_read(getDB, newPerson, fields_used_in_tests);
     });
     describe('replace()', function () {
-        tests_1.test_replace(getDB, newPerson, ['account_email', 'locale']);
+        tests_1.test_replace(getDB, newPerson, fields_used_in_tests, in_memory_db_1.SUPPORTED_FEATURES);
     });
     describe('update()', function () {
-        var config = {
-            test: fields_used_in_tests,
-            unsupported: in_memory_db_1.UNSUPPORTED_UPDATE_CMDS
-        };
-        tests_1.test_update(getDB, newPerson, config);
+        tests_1.test_update(getDB, newPerson, fields_used_in_tests, in_memory_db_1.SUPPORTED_FEATURES);
     });
     describe('del()', function () {
-        tests_1.test_del(getDB, newPerson, ['account_email', 'locale']);
+        tests_1.test_del(getDB, newPerson, fields_used_in_tests);
     });
     describe('find()', function () {
-        tests_1.test_find(getDB, newPerson, 'account_email');
+        tests_1.test_find(getDB, newPerson, fields_used_in_tests, in_memory_db_1.SUPPORTED_FEATURES);
     });
 });

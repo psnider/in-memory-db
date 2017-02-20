@@ -4,8 +4,7 @@ import pino = require('pino')
 import HTTP_STATUS = require('http-status-codes')
 
 import configure = require('@sabbatical/configure-local')
-import {ArrayCallback, Conditions, Cursor, DocumentID, DocumentBase, DocumentDatabase, ErrorOnlyCallback, Fields, ObjectCallback, ObjectOrArrayCallback, Sort, UpdateFieldCommand} from '@sabbatical/document-database'
-import {UnsupportedUpdateCmds} from '@sabbatical/document-database/tests'
+import {ArrayCallback, Conditions, Cursor, DocumentID, DocumentBase, DocumentDatabase, ErrorOnlyCallback, Fields, ObjectCallback, ObjectOrArrayCallback, Sort, SupportedFeatures, UpdateFieldCommand} from '@sabbatical/document-database'
 
 type DataType = DocumentBase
 
@@ -32,19 +31,25 @@ function newError(msg, status) {
 }
 
 
-export var UNSUPPORTED_UPDATE_CMDS: UnsupportedUpdateCmds = {
-    object: {
-        set: false, 
-        unset: true
+export var SUPPORTED_FEATURES: SupportedFeatures = {
+    replace: true,
+    update: {
+        object: {
+            set: true,
+            unset: false
+        },
+        array: {
+            set: false,
+            unset: false,
+            insert: false,
+            remove: false
+        }
     },
-    array: {
-        set: true,
-        unset: true,
-        insert: true,
-        remove: true
+    find: {
+        all: true
     }
-}
-
+} 
+    
 
 export class InMemoryDB implements DocumentDatabase {
 
@@ -53,7 +58,7 @@ export class InMemoryDB implements DocumentDatabase {
     index: {[_id:string]: DataType}
     
 
-    constructor(_id: string, typename: string) {
+    constructor() {
         this.next_id = 1
         this.connected = false
         this.index = {}
@@ -147,6 +152,7 @@ export class InMemoryDB implements DocumentDatabase {
                 if (obj['_id'] == null) {
                     var cloned_obj = cloneObject(obj)
                     cloned_obj._id = this.createObjectId()
+                    cloned_obj._obj_ver = 1
                     this.addToIndex(cloned_obj)
                     done(undefined, cloned_obj)
                 } else {
@@ -161,6 +167,7 @@ export class InMemoryDB implements DocumentDatabase {
             return this.promisify_create(obj)
         }
     }
+
 
     promisify_create(value: DataType): Promise<DataType> {
         return new Promise((resolve, reject) => {
@@ -237,9 +244,16 @@ export class InMemoryDB implements DocumentDatabase {
         if (done) {
             if (this.connected) {
                 if (this.isInIndex(obj._id)) {
-                    // the returned object is different from both the object saved, and the one provided
-                    this.addToIndex(obj)
-                    done(undefined, this.cloneFromIndex(obj._id))
+                    let original_obj = this.getFromIndex(obj._id)
+                    if (obj._obj_ver === original_obj._obj_ver) {
+                        // the returned object is different from both the object saved, and the one provided
+                        this.addToIndex(obj)
+                        let cloned_obj = this.cloneFromIndex(obj._id)
+                        cloned_obj._obj_ver++
+                        done(undefined, cloned_obj)
+                    } else {
+                        done(newError(`replace refused due to intermediate update`, HTTP_STATUS.CONFLICT))
+                    }
                 } else {
                     done(newError(`_id is invalid`, HTTP_STATUS.BAD_REQUEST))
                 }
@@ -266,19 +280,32 @@ export class InMemoryDB implements DocumentDatabase {
     }
 
 
-    update(conditions: Conditions, updates: UpdateFieldCommand[]): Promise<DataType>
-    update(conditions: Conditions, updates: UpdateFieldCommand[], done: ObjectCallback): void
-    update(conditions: Conditions, updates: UpdateFieldCommand[], done?: ObjectCallback): Promise<DataType> | void {
+    performUpdates(stored_obj: DocumentBase, updates: UpdateFieldCommand[]) {
+        if (updates.length !== 1) throw new Error('update only supports one UpdateFieldCommand at a time')
+        let update = updates[0]
+        for (let i = 0 ; i < updates.length ; ++i) {
+            let update = updates[i]
+            if (update.cmd !== 'set') throw new Error('update only supports UpdateFieldCommand.cmd==set')
+            if (update.field.includes('.')) throw new Error('update only supports top-level fields')
+            stored_obj[update.field] = update.value
+        }
+    }
+
+
+    update(_id: DocumentID, _obj_ver: number, updates: UpdateFieldCommand[]): Promise<DataType>
+    update(_id: DocumentID, _obj_ver: number, updates: UpdateFieldCommand[], done: ObjectCallback): void
+    update(_id: DocumentID, _obj_ver: number, updates: UpdateFieldCommand[], done?: ObjectCallback): Promise<DataType> | void {
         if (done) {
             if (this.connected) {
-                let _id = conditions['_id']
-                var obj = this.getFromIndex(_id)
-                if (obj) {
-                    if (updates.length !== 1) throw new Error('update only supports one UpdateFieldCommand at a time')
-                    let update = updates[0]
-                    if (update.cmd !== 'set') throw new Error('update only supports UpdateFieldCommand.cmd==set')
-                    obj[update.field] = update.value
-                    done(undefined, this.cloneFromIndex(_id))
+                var stored_obj = this.getFromIndex(_id)
+                if (stored_obj) {
+                    if (_obj_ver === stored_obj._obj_ver) {
+                        this.performUpdates(stored_obj, updates)
+                        stored_obj._obj_ver++
+                        done(undefined, this.cloneFromIndex(_id))
+                    } else {
+                        done(newError(`update refused due to intermediate update`, HTTP_STATUS.CONFLICT))
+                    }
                 } else {
                     done(newError(`_id is invalid`, HTTP_STATUS.BAD_REQUEST))
                 }
@@ -287,14 +314,14 @@ export class InMemoryDB implements DocumentDatabase {
                 done(error)
             }
         } else {
-            return this.promisify_update(conditions, updates)
+            return this.promisify_update(_id, _obj_ver, updates)
         }
     }
 
 
-    promisify_update(conditions: Conditions, updates: UpdateFieldCommand[]): Promise<DataType> {
+    promisify_update(_id: DocumentID, _obj_ver: number, updates: UpdateFieldCommand[]): Promise<DataType> {
         return new Promise((resolve, reject) => {
-            this.update(conditions, updates, (error, result) => {
+            this.update(_id, _obj_ver, updates, (error, result) => {
                 if (!error) {
                     resolve(result)
                 } else {

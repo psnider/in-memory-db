@@ -2,14 +2,14 @@ import CHAI                 = require('chai')
 const  expect               = CHAI.expect
 
 import {ArrayCallback, Conditions, Cursor, DocumentID, DocumentDatabase, ErrorOnlyCallback, Fields, ObjectCallback, Sort, UpdateFieldCommand} from '@sabbatical/document-database'
-import {UpdateConfiguration, FieldsUsedInTests, test_create, test_read, test_replace, test_del, test_update, test_find} from '@sabbatical/document-database/tests'
+import {FieldsUsedInTests, test_create, test_read, test_replace, test_del, test_update, test_find} from '@sabbatical/document-database/tests'
 
 // select either: people-db-mongo or people-db-in-memory
 
-import {InMemoryDB, UNSUPPORTED_UPDATE_CMDS} from './in-memory-db'
+import {InMemoryDB, SUPPORTED_FEATURES} from './in-memory-db'
 
 
-var db: DocumentDatabase = new InMemoryDB('people', 'Person')
+var db: DocumentDatabase = new InMemoryDB()
 
 
 // example data type, from people-service project
@@ -84,6 +84,7 @@ function newContactMethod() : ContactMethod {
 var fields_used_in_tests: FieldsUsedInTests = {
     populated_string: 'account_email',
     unpopulated_string: 'time_zone',
+    unique_key_fieldname: 'account_email',
     obj_array: {
         name: 'contact_methods',
         key_field: 'address',
@@ -110,36 +111,32 @@ describe('InMemoryDB', function() {
     
 
     describe('create()', function() {
-         test_create<Person>(getDB, newPerson, ['account_email', 'locale'])        
+         test_create<Person>(getDB, newPerson, fields_used_in_tests)        
     })
 
 
     describe('read()', function() {
-         test_read<Person>(getDB, newPerson, ['account_email', 'locale'])        
+         test_read<Person>(getDB, newPerson, fields_used_in_tests)        
     })
 
 
     describe('replace()', function() {
-         test_replace<Person>(getDB, newPerson, ['account_email', 'locale'])        
+         test_replace<Person>(getDB, newPerson, fields_used_in_tests, SUPPORTED_FEATURES)        
     })
 
 
     describe('update()', function() {
-        var config: UpdateConfiguration = {
-            test: fields_used_in_tests,
-            unsupported: UNSUPPORTED_UPDATE_CMDS
-        }
-        test_update<Person>(getDB, newPerson, config)
+        test_update<Person>(getDB, newPerson, fields_used_in_tests, SUPPORTED_FEATURES)
     })
 
 
     describe('del()', function() {
-         test_del<Person>(getDB, newPerson, ['account_email', 'locale'])        
+         test_del<Person>(getDB, newPerson, fields_used_in_tests)        
     })
 
 
     describe('find()', function() {
-         test_find<Person>(getDB, newPerson, 'account_email')
+         test_find<Person>(getDB, newPerson, fields_used_in_tests, SUPPORTED_FEATURES)
     })
 
 
