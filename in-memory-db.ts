@@ -16,9 +16,14 @@ function cloneObject(obj) {
     if (obj === null || typeof obj !== 'object') {
         return obj
     }
-    var temp = obj.constructor() // give temp the original obj's constructor
-    for (var key in obj) {
-        temp[key] = cloneObject(obj[key])
+    var temp
+    if (obj instanceof Date) {
+        temp = new Date(obj)
+    } else {
+        temp = obj.constructor(); // create new obj from original obj's constructor
+        for (var key in obj) {
+            temp[key] = cloneObject(obj[key]);
+        }
     }
     return temp
 }
