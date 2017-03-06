@@ -9,7 +9,7 @@ import {ArrayCallback, Conditions, Cursor, DocumentID, DocumentBase, DocumentDat
 type DataType = DocumentBase
 
 
-var log = pino({name: 'people-db', enabled: !process.env.DISABLE_LOGGING})
+var log = pino({name: 'in-memory-db', enabled: !process.env.DISABLE_LOGGING})
 
 
 function cloneObject(obj) {
@@ -41,13 +41,13 @@ export var SUPPORTED_FEATURES: SupportedFeatures = {
     update: {
         object: {
             set: true,
-            unset: false
+            unset: true
         },
         array: {
-            set: false,
-            unset: false,
-            insert: false,
-            remove: false
+            set: true,
+            unset: true,
+            insert: true,
+            remove: true
         }
     },
     find: {
@@ -285,15 +285,63 @@ export class InMemoryDB implements DocumentDatabase {
     }
 
 
-    performUpdates(stored_obj: DocumentBase, updates: UpdateFieldCommand[]) {
-        if (updates.length !== 1) throw new Error('update only supports one UpdateFieldCommand at a time')
-        let update = updates[0]
-        for (let i = 0 ; i < updates.length ; ++i) {
-            let update = updates[i]
-            if (update.cmd !== 'set') throw new Error('update only supports UpdateFieldCommand.cmd==set')
-            if (update.field.includes('.')) throw new Error('update only supports top-level fields')
-            stored_obj[update.field] = update.value
-        }
+    performUpdates(obj: DocumentBase, updates: UpdateFieldCommand[]): Promise<DocumentBase> {
+        return new Promise((resolve, reject) => {
+            for (let i = 0 ; i < updates.length ; ++i) {
+                let update = updates[i]
+                if (update.field.includes('.')) throw new Error('update only supports top-level fields')
+                let field = obj[update.field]
+                switch (update.cmd) {
+                case 'set':
+                    if (Array.isArray(field)) {
+                        let i = field.findIndex((element) => {return element === update.element_id})
+                        if (i > -1) {
+                            field[i] = update.value
+                            resolve(obj)
+                        } else {
+                            reject(new Error(`array element not found`))
+                        }
+                    } else {
+                        obj[update.field] = update.value
+                        resolve(obj)
+                    }
+                    break
+                case 'unset':
+                    if (Array.isArray(field)) {
+                        let i = field.findIndex((element) => {return element === update.value})
+                        if (i > -1) {
+                            field.splice(i, 1)
+                            resolve(obj)
+                        } else {
+                            reject(new Error(`cmd=unset not allowed on array without a subfield, use cmd=remove`))
+                        }
+                    } else {
+                        obj[update.field] = undefined
+                        resolve(obj)
+                    }
+                    break
+                case 'insert':
+                    obj[update.field].push(update.value)
+                    resolve(obj)
+                    break
+                case 'remove':
+                    if (Array.isArray(field)) {
+                        let i = field.findIndex((element) => {return element === update.element_id})
+                        if (i > -1) {
+                            field.splice(i, 1)
+                            resolve(obj)
+                        } else {
+                            reject(new Error(`couldnt find matching element`))
+                        }
+                    } else {
+                        reject(new Error(`cmd=remove only allowed on arrays`))
+                    }
+                    break
+                default:
+                    reject(new Error(`update does not support UpdateFieldCommand.cmd=${update.cmd}`))
+                }
+            }
+        })
     }
 
 
@@ -302,12 +350,16 @@ export class InMemoryDB implements DocumentDatabase {
     update(_id: DocumentID, _obj_ver: number, updates: UpdateFieldCommand[], done?: ObjectCallback): Promise<DataType> | void {
         if (done) {
             if (this.connected) {
-                var stored_obj = this.getFromIndex(_id)
+                var stored_obj = this.cloneFromIndex(_id)
                 if (stored_obj) {
                     if (_obj_ver === stored_obj._obj_ver) {
-                        this.performUpdates(stored_obj, updates)
-                        stored_obj._obj_ver++
-                        done(undefined, this.cloneFromIndex(_id))
+                        this.performUpdates(stored_obj, updates).then((updated_obj) => {
+                            updated_obj._obj_ver++
+                            this.addToIndex(updated_obj)
+                            done(undefined, this.cloneFromIndex(_id))
+                        }).catch((error) => {
+                            done(error)
+                        })
                     } else {
                         done(newError(`update refused due to intermediate update`, HTTP_STATUS.CONFLICT))
                     }

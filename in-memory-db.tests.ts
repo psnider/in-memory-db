@@ -4,7 +4,6 @@ const  expect               = CHAI.expect
 import {ArrayCallback, Conditions, Cursor, DocumentID, DocumentDatabase, ErrorOnlyCallback, Fields, ObjectCallback, Sort, UpdateFieldCommand} from '@sabbatical/document-database'
 import {FieldsUsedInTests, test_create, test_read, test_replace, test_del, test_update, test_find} from '@sabbatical/document-database/tests'
 
-// select either: people-db-mongo or people-db-in-memory
 
 import {InMemoryDB, SUPPORTED_FEATURES} from './in-memory-db'
 
@@ -12,7 +11,6 @@ import {InMemoryDB, SUPPORTED_FEATURES} from './in-memory-db'
 var db: DocumentDatabase = new InMemoryDB()
 
 
-// example data type, from people-service project
 type DatabaseObjectID = string;
 type URL = string;
 
@@ -52,7 +50,6 @@ export interface Person {
 let next_email_id = 1
 let next_mobile_number = 1234
 
-// This is identical to newPerson() in people-db.tests.ts
 function newPerson(options?: {_id?: string, name?: Name}) : Person {
     const name = (options && options.name) ? options.name : {given: 'Bob', family: 'Smith'}
     const account_email = `${name.given}.${name.family}.${next_email_id++}@test.co`
@@ -85,17 +82,17 @@ var fields_used_in_tests: FieldsUsedInTests = {
     populated_string: 'account_email',
     unpopulated_string: 'time_zone',
     unique_key_fieldname: 'account_email',
-    obj_array: {
-        name: 'contact_methods',
-        key_field: 'address',
-        populated_field: {name:'method', type: 'string'},
-        createElement: newContactMethod
-    }
+    string_array: {name: 'profile_pic_urls'},
+    // obj_array: {
+    //     name: 'contact_methods',
+    //     key_field: 'address',
+    //     populated_field: {name:'method', type: 'string'},
+    //     createElement: newContactMethod
+    // }
 }
 
 
 
-// NOTE: these tests are identical to the ones in people-service.tests.ts
 describe('InMemoryDB', function() {
 
     function getDB() {return db}

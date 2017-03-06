@@ -2,12 +2,10 @@
 const CHAI = require('chai');
 const expect = CHAI.expect;
 const tests_1 = require('@sabbatical/document-database/tests');
-// select either: people-db-mongo or people-db-in-memory
 const in_memory_db_1 = require('./in-memory-db');
 var db = new in_memory_db_1.InMemoryDB();
 let next_email_id = 1;
 let next_mobile_number = 1234;
-// This is identical to newPerson() in people-db.tests.ts
 function newPerson(options) {
     const name = (options && options.name) ? options.name : { given: 'Bob', family: 'Smith' };
     const account_email = `${name.given}.${name.family}.${next_email_id++}@test.co`;
@@ -37,14 +35,8 @@ var fields_used_in_tests = {
     populated_string: 'account_email',
     unpopulated_string: 'time_zone',
     unique_key_fieldname: 'account_email',
-    obj_array: {
-        name: 'contact_methods',
-        key_field: 'address',
-        populated_field: { name: 'method', type: 'string' },
-        createElement: newContactMethod
-    }
+    string_array: { name: 'profile_pic_urls' },
 };
-// NOTE: these tests are identical to the ones in people-service.tests.ts
 describe('InMemoryDB', function () {
     function getDB() { return db; }
     before((done) => {
