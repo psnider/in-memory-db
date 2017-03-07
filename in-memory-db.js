@@ -1,8 +1,9 @@
 "use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
 // import mongoose = require('mongoose')
 // mongoose.Promise = Promise
-const pino = require('pino');
-const HTTP_STATUS = require('http-status-codes');
+const pino = require("pino");
+const HTTP_STATUS = require("http-status-codes");
 var log = pino({ name: 'in-memory-db', enabled: !process.env.DISABLE_LOGGING });
 function cloneObject(obj) {
     if (obj === null || typeof obj !== 'object') {

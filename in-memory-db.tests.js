@@ -1,8 +1,9 @@
 "use strict";
-const CHAI = require('chai');
+Object.defineProperty(exports, "__esModule", { value: true });
+const CHAI = require("chai");
 const expect = CHAI.expect;
-const tests_1 = require('@sabbatical/document-database/tests');
-const in_memory_db_1 = require('./in-memory-db');
+const tests_1 = require("@sabbatical/document-database/tests");
+const in_memory_db_1 = require("./in-memory-db");
 var db = new in_memory_db_1.InMemoryDB();
 let next_email_id = 1;
 let next_mobile_number = 1234;
