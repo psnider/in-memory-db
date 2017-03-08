@@ -64,6 +64,9 @@ exports.SUPPORTED_FEATURES = {
         all: true
     }
 };
+function isObject(value) {
+    return (typeof value === 'object') && !(value instanceof Date);
+}
 class InMemoryDB {
     constructor() {
         this.next_id = 1;
@@ -261,12 +264,32 @@ class InMemoryDB {
         });
     }
     performSet(obj, update) {
-        debugger;
         let component = document_database_1.getValue(obj, update.field);
         if ((component != null) && Array.isArray(component)) {
-            let i = component.findIndex((element) => { return element === update.element_id; });
-            if (i > -1) {
-                component[i] = update.value;
+            if (component.length > 0) {
+                if (isObject(component[0])) {
+                    let i = component.findIndex((element) => { return element[update.key_field] === update.element_id; });
+                    if (i > -1) {
+                        if (update.subfield) {
+                            component[i][update.subfield] = update.value;
+                        }
+                        else {
+                            component[i] = update.value;
+                        }
+                    }
+                    else {
+                        return `array element not found`;
+                    }
+                }
+                else {
+                    let i = component.findIndex((element) => { return element === update.element_id; });
+                    if (i > -1) {
+                        component[i] = update.value;
+                    }
+                    else {
+                        return `array element not found`;
+                    }
+                }
             }
             else {
                 return `array element not found`;
@@ -286,9 +309,14 @@ class InMemoryDB {
     performUnset(obj, update) {
         let component = document_database_1.getValue(obj, update.field);
         if ((component != null) && Array.isArray(component)) {
-            let i = component.findIndex((element) => { return element === update.value; });
-            if (i > -1) {
-                component.splice(i, 1);
+            if (isObject(component[0]) && update.subfield) {
+                let i = component.findIndex((element) => { return element[update.key_field] === update.element_id; });
+                if (i > -1) {
+                    component[i][update.subfield] = undefined;
+                }
+                else {
+                    return `array element not found`;
+                }
             }
             else {
                 return `cmd=unset not allowed on array without a subfield, use cmd=remove`;
@@ -311,18 +339,24 @@ class InMemoryDB {
             component.push(update.value);
         }
         else {
-            return `update.field is invalid`;
+            return `insert only allowed on arrays`;
         }
     }
     performRemove(obj, update) {
         let component = document_database_1.getValue(obj, update.field);
         if ((component != null) && Array.isArray(component)) {
-            let i = component.findIndex((element) => { return element === update.element_id; });
+            let i;
+            if (isObject(component[0])) {
+                i = component.findIndex((element) => { return element[update.key_field] === update.element_id; });
+            }
+            else {
+                i = component.findIndex((element) => { return element === update.element_id; });
+            }
             if (i > -1) {
                 component.splice(i, 1);
             }
             else {
-                return `couldnt find matching element`;
+                return `array element not found`;
             }
         }
         else {

@@ -83,12 +83,13 @@ var fields_used_in_tests: FieldsUsedInTests = {
     unpopulated_string: 'time_zone',
     unique_key_fieldname: 'account_email',
     string_array: {name: 'profile_pic_urls'},
-    // obj_array: {
-    //     name: 'contact_methods',
-    //     key_field: 'address',
-    //     populated_field: {name:'method', type: 'string'},
-    //     createElement: newContactMethod
-    // }
+    obj_array: {
+        name: 'contact_methods',
+        key_field: 'address',
+        populated_field: {name:'method', type: 'string'},
+        unpopulated_field: {name:'display_name', type: 'string'},
+        createElement: newContactMethod
+    }
 }
 
 
