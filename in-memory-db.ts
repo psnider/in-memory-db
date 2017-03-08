@@ -36,6 +36,28 @@ function newError(msg, status) {
 }
 
 
+// @return the element that contains a given field path
+// for example: if  fieldpath == "hat.size", then this returns obj.hat,
+// and if fieldpath == "hat", then this returns obj.
+export function getContainingObject(obj: object, fieldpath: string): any {
+    var name_components = fieldpath.split('.').slice(0, -1)
+    name_components.forEach((name_component) => {
+        obj = obj[name_component];
+        if (obj == null)
+            return null;
+    })
+    return obj;
+}
+
+
+// @return the name of the last component of a given field path
+// for example: if  fieldpath == "hat.size", then this returns "size",
+export function getLastField(obj: object, fieldpath: string): string {
+    return fieldpath.split('.').slice(-1)[0]
+}
+
+
+
 export var SUPPORTED_FEATURES: SupportedFeatures = {
     replace: true,
     update: {
@@ -285,61 +307,102 @@ export class InMemoryDB implements DocumentDatabase {
     }
 
 
+    performSet(obj: DocumentBase, update: UpdateFieldCommand): string {
+        let component = getValue(obj, update.field)
+        if ((component != null) && Array.isArray(component)) {
+            let i = component.findIndex((element) => {return element === update.element_id})
+            if (i > -1) {
+                component[i] = update.value
+            } else {
+                return `array element not found`
+            }
+        } else {
+            let containing_obj = getContainingObject(obj, update.field)
+            let last_field = getLastField(obj, update.field)
+            if (containing_obj != null) {
+                containing_obj[last_field] = update.value
+            } else {
+                return `update.field is invalid`
+            }
+        }
+    }
+
+
+    performUnset(obj: DocumentBase, update: UpdateFieldCommand): string {
+        let component = getValue(obj, update.field)
+        if ((component != null) && Array.isArray(component)) {
+            let i = component.findIndex((element) => {return element === update.value})
+            if (i > -1) {
+                component.splice(i, 1)
+            } else {
+                return `cmd=unset not allowed on array without a subfield, use cmd=remove`
+            }
+        } else {
+            let containing_obj = getContainingObject(obj, update.field)
+            let last_field = getLastField(obj, update.field)
+            if (containing_obj != null) {
+                containing_obj[last_field] = undefined
+            } else {
+                return `update.field is invalid`
+            }
+        }
+    }
+
+
+    performInsert(obj: DocumentBase, update: UpdateFieldCommand): string {
+        let component = getValue(obj, update.field)
+        if ((component != null) && Array.isArray(component)) {
+            component.push(update.value)
+        } else {
+            return `update.field is invalid`
+        }
+    }
+
+
+    performRemove(obj: DocumentBase, update: UpdateFieldCommand): string {
+        let component = getValue(obj, update.field)
+        if ((component != null) && Array.isArray(component)) {
+            let i = component.findIndex((element) => {return element === update.element_id})
+            if (i > -1) {
+                component.splice(i, 1)
+            } else {
+                return `couldnt find matching element`
+            }
+        } else {
+            return `cmd=remove only allowed on arrays`
+        }
+    }
+
+
     performUpdates(obj: DocumentBase, updates: UpdateFieldCommand[]): Promise<DocumentBase> {
         return new Promise((resolve, reject) => {
-            for (let i = 0 ; i < updates.length ; ++i) {
+            let error: string
+            for (let i = 0 ; !error && (i < updates.length) ; ++i) {
                 let update = updates[i]
-                if (update.field.includes('.')) throw new Error('update only supports top-level fields')
-                let field = obj[update.field]
+                let component = getValue(obj, update.field)
+                let containing_obj = getContainingObject(obj, update.field)
+                let last_field = getLastField(obj, update.field)
                 switch (update.cmd) {
                 case 'set':
-                    if (Array.isArray(field)) {
-                        let i = field.findIndex((element) => {return element === update.element_id})
-                        if (i > -1) {
-                            field[i] = update.value
-                            resolve(obj)
-                        } else {
-                            reject(new Error(`array element not found`))
-                        }
-                    } else {
-                        obj[update.field] = update.value
-                        resolve(obj)
-                    }
+                    error = this.performSet(obj, update)
                     break
                 case 'unset':
-                    if (Array.isArray(field)) {
-                        let i = field.findIndex((element) => {return element === update.value})
-                        if (i > -1) {
-                            field.splice(i, 1)
-                            resolve(obj)
-                        } else {
-                            reject(new Error(`cmd=unset not allowed on array without a subfield, use cmd=remove`))
-                        }
-                    } else {
-                        obj[update.field] = undefined
-                        resolve(obj)
-                    }
+                    error = this.performUnset(obj, update)
                     break
                 case 'insert':
-                    obj[update.field].push(update.value)
-                    resolve(obj)
+                    error = this.performInsert(obj, update)
                     break
                 case 'remove':
-                    if (Array.isArray(field)) {
-                        let i = field.findIndex((element) => {return element === update.element_id})
-                        if (i > -1) {
-                            field.splice(i, 1)
-                            resolve(obj)
-                        } else {
-                            reject(new Error(`couldnt find matching element`))
-                        }
-                    } else {
-                        reject(new Error(`cmd=remove only allowed on arrays`))
-                    }
+                    error = this.performRemove(obj, update)
                     break
                 default:
-                    reject(new Error(`update does not support UpdateFieldCommand.cmd=${update.cmd}`))
+                    error = `update does not support cmd=${update.cmd}`
                 }
+            }
+            if (!error) {
+                resolve(obj)
+            } else {
+                reject(new Error(error))
             }
         })
     }

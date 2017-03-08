@@ -4,6 +4,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 // mongoose.Promise = Promise
 const pino = require("pino");
 const HTTP_STATUS = require("http-status-codes");
+const document_database_1 = require("@sabbatical/document-database");
 var log = pino({ name: 'in-memory-db', enabled: !process.env.DISABLE_LOGGING });
 function cloneObject(obj) {
     if (obj === null || typeof obj !== 'object') {
@@ -26,6 +27,25 @@ function newError(msg, status) {
     error['http_status'] = status;
     return error;
 }
+// @return the element that contains a given field path
+// for example: if  fieldpath == "hat.size", then this returns obj.hat,
+// and if fieldpath == "hat", then this returns obj.
+function getContainingObject(obj, fieldpath) {
+    var name_components = fieldpath.split('.').slice(0, -1);
+    name_components.forEach((name_component) => {
+        obj = obj[name_component];
+        if (obj == null)
+            return null;
+    });
+    return obj;
+}
+exports.getContainingObject = getContainingObject;
+// @return the name of the last component of a given field path
+// for example: if  fieldpath == "hat.size", then this returns "size",
+function getLastField(obj, fieldpath) {
+    return fieldpath.split('.').slice(-1)[0];
+}
+exports.getLastField = getLastField;
 exports.SUPPORTED_FEATURES = {
     replace: true,
     update: {
@@ -240,68 +260,105 @@ class InMemoryDB {
             });
         });
     }
+    performSet(obj, update) {
+        debugger;
+        let component = document_database_1.getValue(obj, update.field);
+        if ((component != null) && Array.isArray(component)) {
+            let i = component.findIndex((element) => { return element === update.element_id; });
+            if (i > -1) {
+                component[i] = update.value;
+            }
+            else {
+                return `array element not found`;
+            }
+        }
+        else {
+            let containing_obj = getContainingObject(obj, update.field);
+            let last_field = getLastField(obj, update.field);
+            if (containing_obj != null) {
+                containing_obj[last_field] = update.value;
+            }
+            else {
+                return `update.field is invalid`;
+            }
+        }
+    }
+    performUnset(obj, update) {
+        let component = document_database_1.getValue(obj, update.field);
+        if ((component != null) && Array.isArray(component)) {
+            let i = component.findIndex((element) => { return element === update.value; });
+            if (i > -1) {
+                component.splice(i, 1);
+            }
+            else {
+                return `cmd=unset not allowed on array without a subfield, use cmd=remove`;
+            }
+        }
+        else {
+            let containing_obj = getContainingObject(obj, update.field);
+            let last_field = getLastField(obj, update.field);
+            if (containing_obj != null) {
+                containing_obj[last_field] = undefined;
+            }
+            else {
+                return `update.field is invalid`;
+            }
+        }
+    }
+    performInsert(obj, update) {
+        let component = document_database_1.getValue(obj, update.field);
+        if ((component != null) && Array.isArray(component)) {
+            component.push(update.value);
+        }
+        else {
+            return `update.field is invalid`;
+        }
+    }
+    performRemove(obj, update) {
+        let component = document_database_1.getValue(obj, update.field);
+        if ((component != null) && Array.isArray(component)) {
+            let i = component.findIndex((element) => { return element === update.element_id; });
+            if (i > -1) {
+                component.splice(i, 1);
+            }
+            else {
+                return `couldnt find matching element`;
+            }
+        }
+        else {
+            return `cmd=remove only allowed on arrays`;
+        }
+    }
     performUpdates(obj, updates) {
         return new Promise((resolve, reject) => {
-            for (let i = 0; i < updates.length; ++i) {
+            let error;
+            for (let i = 0; !error && (i < updates.length); ++i) {
                 let update = updates[i];
-                if (update.field.includes('.'))
-                    throw new Error('update only supports top-level fields');
-                let field = obj[update.field];
+                let component = document_database_1.getValue(obj, update.field);
+                let containing_obj = getContainingObject(obj, update.field);
+                let last_field = getLastField(obj, update.field);
                 switch (update.cmd) {
                     case 'set':
-                        if (Array.isArray(field)) {
-                            let i = field.findIndex((element) => { return element === update.element_id; });
-                            if (i > -1) {
-                                field[i] = update.value;
-                                resolve(obj);
-                            }
-                            else {
-                                reject(new Error(`array element not found`));
-                            }
-                        }
-                        else {
-                            obj[update.field] = update.value;
-                            resolve(obj);
-                        }
+                        error = this.performSet(obj, update);
                         break;
                     case 'unset':
-                        if (Array.isArray(field)) {
-                            let i = field.findIndex((element) => { return element === update.value; });
-                            if (i > -1) {
-                                field.splice(i, 1);
-                                resolve(obj);
-                            }
-                            else {
-                                reject(new Error(`cmd=unset not allowed on array without a subfield, use cmd=remove`));
-                            }
-                        }
-                        else {
-                            obj[update.field] = undefined;
-                            resolve(obj);
-                        }
+                        error = this.performUnset(obj, update);
                         break;
                     case 'insert':
-                        obj[update.field].push(update.value);
-                        resolve(obj);
+                        error = this.performInsert(obj, update);
                         break;
                     case 'remove':
-                        if (Array.isArray(field)) {
-                            let i = field.findIndex((element) => { return element === update.element_id; });
-                            if (i > -1) {
-                                field.splice(i, 1);
-                                resolve(obj);
-                            }
-                            else {
-                                reject(new Error(`couldnt find matching element`));
-                            }
-                        }
-                        else {
-                            reject(new Error(`cmd=remove only allowed on arrays`));
-                        }
+                        error = this.performRemove(obj, update);
                         break;
                     default:
-                        reject(new Error(`update does not support UpdateFieldCommand.cmd=${update.cmd}`));
+                        error = `update does not support cmd=${update.cmd}`;
                 }
+            }
+            if (!error) {
+                resolve(obj);
+            }
+            else {
+                reject(new Error(error));
             }
         });
     }
