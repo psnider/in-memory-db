@@ -1,6 +1,6 @@
 {
   "name": "@sabbatical/in-memory-db",
-  "version": "0.3.5",
+  "version": "0.3.6",
   "description": "An in-memory database that implements the document-database interface. This database is for test only, as it doesn't persist.",
   "main": "in-memory-db.js",
   "keywords": [],
@@ -17,8 +17,8 @@
   },
   "license": "MIT",
   "dependencies": {
-    "@sabbatical/configure-local": "1.0.2",
-    "@sabbatical/document-database": "0.5.3",
+    "@sabbatical/configure-local": "1.0.4",
+    "@sabbatical/document-database": "0.5.4",
     "http-status-codes": "1.0.6",
     "pino": "3.0.1"
   },
